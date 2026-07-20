@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AgroSat Brasil — Monitoramento Territorial via Satélite</title>
+<meta name="description" content="Monitoramento territorial via satélite no Brasil: clima, solo, NDVI e risco de seca por coordenada, endereço ou CPF/CNPJ.">
+<meta name="theme-color" content="#0E1A12">
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="dark">
+
+<!-- ============ SHELL ============ -->
+<div class="shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.4" opacity="0.5"/>
+          <path d="M16 2 L16 30 M2 16 L30 16" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+          <circle cx="16" cy="16" r="4.5" fill="currentColor"/>
+          <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 4" class="brand__orbit"/>
+        </svg>
+      </span>
+      <div class="brand__text">
+        <strong>AgroSat</strong>
+        <span>BRASIL</span>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Módulos">
+      <button class="navitem is-active" data-view="dashboard" title="Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h4v7H3v-7Zm7-9h4v16h-4V4Zm7 5h4v11h-4V9Z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="navitem" data-view="mapa" title="Mapa Satelital">
+        <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v15L9 19l6 2.5 6-2.5v-15L15 6.5 9 4Zm0 2.2 6 2.5v12.6l-6-2.5V6.2Z"/></svg>
+        <span>Mapa Satelital</span>
+      </button>
+      <button class="navitem" data-view="alertas" title="Alertas Climáticos">
+        <svg viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2Zm0 6 6.5 11h-13L12 8Zm-1 3v4h2v-4h-2Zm0 5.5v2h2v-2h-2Z"/></svg>
+        <span>Alertas</span>
+        <span class="navitem__badge" id="badgeAlertas">0</span>
+      </button>
+      <button class="navitem" data-view="historico" title="Histórico de Monitoramento">
+        <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 8.94 10H19.9A7 7 0 1 1 13 5v4l5-4.5L13 0v3Z"/></svg>
+        <span>Histórico</span>
+      </button>
+      <button class="navitem" data-view="relatorios" title="Relatórios">
+        <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 1.5V8h4.5L14 3.5ZM8 13h8v1.6H8V13Zm0 3.4h8V18H8v-1.6Zm0-6.8h5V11H8V9.6Z"/></svg>
+        <span>Relatórios</span>
+      </button>
+      <button class="navitem" data-view="ia" title="IA Analítica">
+        <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4c0 1-.4 1.8-1 2.4 1.8.8 3 2.6 3 4.6v1a3 3 0 0 1-3 3v3H9v-3a3 3 0 0 1-3-3v-1c0-2 1.2-3.8 3-4.6A4 4 0 0 1 8 6a4 4 0 0 1 4-4Zm-1 17h2v3h-2v-3Z"/></svg>
+        <span>IA Analítica</span>
+      </button>
+      <button class="navitem" data-view="marketplace" title="Marketplace Rural">
+        <svg viewBox="0 0 24 24"><path d="M3 7h18l-1.5 9.5a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7L3 7Zm2.2 2 1 6.5h11.6l1-6.5H5.2ZM8 4h8v2H8V4ZM7 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm10 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
+        <span>Marketplace</span>
+      </button>
+    </nav>
+
+    <div class="sidebar__footer">
+      <button class="navitem navitem--ghost" id="btnTheme" title="Alternar tema">
+        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 9 8.5 8.5 0 0 1-8-9Z"/></svg>
+        <span>Modo claro</span>
+      </button>
+      <button class="navitem navitem--ghost" id="btnLogin" title="Entrar">
+        <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5Z"/></svg>
+        <span id="loginLabel">Entrar</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── TOPBAR (mobile) ── -->
+  <header class="topbar">
+    <button class="topbar__burger" id="btnBurger" aria-label="Abrir menu">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z"/></svg>
+    </button>
+    <div class="topbar__title" id="viewTitle">Dashboard</div>
+    <div class="topbar__status">
+      <span class="dot dot--live" aria-hidden="true"></span>
+      <span>BR · ATIVO</span>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main">
+
+    <!-- ── BUSCA GLOBAL ── -->
+    <section class="searchbar" aria-label="Consultar território">
+      <div class="searchbar__tabs" role="tablist">
+        <button class="stab is-active" data-mode="coord" role="tab">Coordenadas</button>
+        <button class="stab" data-mode="endereco" role="tab">Endereço</button>
+        <button class="stab" data-mode="doc" role="tab">CPF/CNPJ</button>
+      </div>
+      <form class="searchbar__form" id="searchForm" autocomplete="off">
+        <div class="searchbar__field" data-field="coord">
+          <input type="text" id="inputLat" placeholder="Latitude (ex: -14.235)" inputmode="decimal">
+          <input type="text" id="inputLng" placeholder="Longitude (ex: -51.925)" inputmode="decimal">
+        </div>
+        <div class="searchbar__field is-hidden" data-field="endereco">
+          <input type="text" id="inputEndereco" placeholder="Cidade, fazenda ou endereço — ex: Sorriso, MT">
+        </div>
+        <div class="searchbar__field is-hidden" data-field="doc">
+          <input type="text" id="inputDoc" placeholder="CPF ou CNPJ autorizado — ex: 000.000.000-00">
+        </div>
+        <button type="submit" class="btn btn--primary" id="btnBuscar">
+          <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2Zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"/></svg>
+          Analisar área
+        </button>
+      </form>
+      <p class="searchbar__hint" id="searchHint">Apenas coordenadas dentro do território brasileiro são aceitas.</p>
+    </section>
+
+    <!-- ── VIEW: DASHBOARD ── -->
+    <section class="view is-active" id="view-dashboard">
+      <div class="view__head">
+        <div>
+          <h1>Painel territorial</h1>
+          <p class="locLabel" id="locLabelDash">Nenhuma área selecionada — analise um ponto para ver os dados aqui.</p>
+        </div>
+        <span class="chip chip--live">LIVE · Open-Meteo</span>
+      </div>
+
+      <div class="grid-dash" id="dashGrid">
+        <!-- Card hero -->
+        <article class="card card--hero" id="cardHero">
+          <header>
+            <span class="card__eyebrow">SAÚDE DA ÁREA</span>
+            <span class="chip chip--demo">estimado</span>
+          </header>
+          <div class="hero__score">
+            <span class="hero__num" id="heroScore">—</span>
+            <span class="hero__unit">/ 100</span>
+          </div>
+          <p class="hero__desc" id="heroDesc">Selecione uma área para calcular o índice combinado de NDVI, umidade e risco de seca.</p>
+          <div class="hero__bars">
+            <div class="hbar"><span>NDVI</span><div class="hbar__track"><div class="hbar__fill" id="barNdvi"></div></div></div>
+            <div class="hbar"><span>Umidade do solo</span><div class="hbar__track"><div class="hbar__fill" id="barUmidade"></div></div></div>
+            <div class="hbar"><span>Risco de seca</span><div class="hbar__track"><div class="hbar__fill hbar__fill--warn" id="barSeca"></div></div></div>
+          </div>
+        </article>
+
+        <article class="card" data-metric="temp">
+          <span class="card__eyebrow">TEMPERATURA</span>
+          <span class="card__big" id="metricTemp">—</span>
+          <span class="card__sub" id="metricTempSub">aguardando dados</span>
+        </article>
+
+        <article class="card" data-metric="chuva">
+          <span class="card__eyebrow">PREVISÃO DE CHUVA</span>
+          <span class="card__big" id="metricChuva">—</span>
+          <span class="card__sub" id="metricChuvaSub">próximas 24h</span>
+        </article>
+
+        <article class="card" data-metric="solo">
+          <span class="card__eyebrow">TIPO DE SOLO</span>
+          <span class="card__big card__big--text" id="metricSolo">—</span>
+          <span class="card__sub" id="metricSoloSub">classificação por bioma</span>
+        </article>
+
+        <article class="card" data-metric="umidade">
+          <span class="card__eyebrow">UMIDADE DO SOLO</span>
+          <span class="card__big" id="metricUmidade">—</span>
+          <span class="card__sub">camada superficial</span>
+        </article>
+
+        <article class="card" data-metric="ndvi">
+          <span class="card__eyebrow">ÍNDICE NDVI</span>
+          <span class="card__big" id="metricNdvi">—</span>
+          <span class="card__sub" id="metricNdviSub">vegetação ativa</span>
+        </article>
+
+        <article class="card" data-metric="seca">
+          <span class="card__eyebrow">RISCO DE SECA</span>
+          <span class="card__big card__big--text" id="metricSeca">—</span>
+          <span class="card__sub">próximos 7 dias</span>
+        </article>
+
+        <article class="card card--wide" id="cardForecast">
+          <span class="card__eyebrow">PREVISÃO 7 DIAS</span>
+          <div class="forecast__row" id="forecastRow">
+            <span class="muted">Aguardando seleção de área…</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── VIEW: MAPA ── -->
+    <section class="view" id="view-mapa">
+      <div class="view__head">
+        <div>
+          <h1>Mapa satelital</h1>
+          <p class="locLabel">Visualização por satélite restrita ao território brasileiro.</p>
+        </div>
+        <div class="maplayers" role="group" aria-label="Camadas">
+          <button class="mlayer is-active" data-layer="satelite">Satélite</button>
+          <button class="mlayer" data-layer="ruas">Ruas</button>
+          <button class="mlayer" data-layer="ndvi">NDVI (sim.)</button>
+        </div>
+      </div>
+      <div class="mapwrap">
+        <div id="map"></div>
+        <div class="telemetry" id="telemetry">
+          <div class="telemetry__row"><span>LAT</span><strong id="teleLat">-14.235000</strong></div>
+          <div class="telemetry__row"><span>LNG</span><strong id="teleLng">-51.925300</strong></div>
+          <div class="telemetry__row"><span>ZOOM</span><strong id="teleZoom">4</strong></div>
+          <div class="telemetry__row"><span>STATUS</span><strong class="telemetry__live">RASTREANDO</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: ALERTAS ── -->
+    <section class="view" id="view-alertas">
+      <div class="view__head">
+        <div>
+          <h1>Alertas climáticos</h1>
+          <p class="locLabel">Notificações de risco para a área monitorada.</p>
+        </div>
+        <span class="chip chip--demo">dados simulados — DEMO</span>
+      </div>
+      <div class="alertlist" id="alertList"></div>
+    </section>
+
+    <!-- ── VIEW: HISTÓRICO ── -->
+    <section class="view" id="view-historico">
+      <div class="view__head">
+        <div>
+          <h1>Histórico de monitoramento</h1>
+          <p class="locLabel" id="locLabelHist">Selecione uma área no Dashboard ou Mapa para carregar o histórico real.</p>
+        </div>
+        <span class="chip chip--live">LIVE · Open-Meteo Archive</span>
+      </div>
+      <div class="card card--wide">
+        <span class="card__eyebrow">TEMPERATURA MÉDIA — ÚLTIMOS 30 DIAS</span>
+        <div class="chartwrap"><canvas id="chartHistorico" height="90"></canvas></div>
+      </div>
+      <div class="card card--wide" style="margin-top:16px">
+        <span class="card__eyebrow">PRECIPITAÇÃO — ÚLTIMOS 30 DIAS</span>
+        <div class="chartwrap"><canvas id="chartChuvaHist" height="90"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: RELATÓRIOS ── -->
+    <section class="view" id="view-relatorios">
+      <div class="view__head">
+        <div>
+          <h1>Relatórios</h1>
+          <p class="locLabel">Exporte os dados da área monitorada em PDF ou Excel.</p>
+        </div>
+        <span class="chip chip--demo">geração local — DEMO</span>
+      </div>
+      <div class="reportbox">
+        <p>O relatório inclui: previsão de chuva, tipo de solo, umidade, temperatura, NDVI, risco de seca e histórico climático da área atualmente selecionada.</p>
+        <div class="reportbox__actions">
+          <button class="btn btn--primary" id="btnExportPdf">
+            <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Z"/></svg>
+            Exportar PDF
+          </button>
+          <button class="btn btn--ghost" id="btnExportXls">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4V4Zm2 2v3h12V6H6Zm0 5v3h5v-3H6Zm7 0v3h5v-3h-5ZM6 16v2h5v-2H6Zm7 0v2h5v-2h-5Z"/></svg>
+            Exportar Excel (CSV)
+          </button>
+        </div>
+        <p class="muted" id="reportStatus"></p>
+      </div>
+    </section>
+
+    <!-- ── VIEW: IA ── -->
+    <section class="view" id="view-ia">
+      <div class="view__head">
+        <div>
+          <h1>IA analítica</h1>
+          <p class="locLabel">Análise de tendências e geração de relatório narrativo a partir dos dados monitorados.</p>
+        </div>
+        <span class="chip chip--demo">heurística local — DEMO</span>
+      </div>
+      <div class="card card--wide">
+        <span class="card__eyebrow">RESUMO INTELIGENTE</span>
+        <p id="iaResumo" class="ia__text">Selecione uma área para que a IA gere uma análise.</p>
+        <button class="btn btn--primary" id="btnGerarIA">Gerar análise</button>
+      </div>
+    </section>
+
+    <!-- ── VIEW: MARKETPLACE ── -->
+    <section class="view" id="view-marketplace">
+      <div class="view__head">
+        <div>
+          <h1>Marketplace rural</h1>
+          <p class="locLabel">Produtos e serviços de microempresários próximos à sua área.</p>
+        </div>
+        <button class="btn btn--primary" id="btnNovoProduto">+ Anunciar produto/serviço</button>
+      </div>
+      <div class="mktfilters">
+        <input type="text" id="mktSearch" placeholder="Buscar produtos, serviços ou fornecedores…">
+      </div>
+      <div class="mktgrid" id="mktGrid"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── MODAL LOGIN ── -->
+<div class="modal" id="modalLogin" aria-hidden="true">
+  <div class="modal__panel">
+    <button class="modal__close" id="btnCloseLogin" aria-label="Fechar">✕</button>
+    <h2>Entrar no AgroSat</h2>
+    <p class="muted">Escolha o tipo de perfil e o método de entrada.</p>
+
+    <div class="profiletabs" id="profileTabs">
+      <button class="ptab is-active" data-profile="proprietario">Proprietário</button>
+      <button class="ptab" data-profile="agricultor">Agricultor</button>
+      <button class="ptab" data-profile="empresa">Empresa</button>
+      <button class="ptab" data-profile="admin">Administrador</button>
+    </div>
+
+    <button class="btn btn--google" id="btnGoogleLogin">
+      <svg viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5Z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.9 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4c-7.4 0-13.8 4.1-17.1 10.1Z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.8-4.9l-6.4-5.4C29.3 35.4 26.8 36 24 36c-5.3 0-9.6-3.1-11.3-7.5l-6.6 5C9.1 39.8 16 44 24 44Z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.4 5.4C41.6 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5Z"/></svg>
+      Entrar com Google
+    </button>
+
+    <div class="divider"><span>ou</span></div>
+
+    <form id="formDocLogin">
+      <label for="loginDoc">CPF ou CNPJ autorizado</label>
+      <input type="text" id="loginDoc" placeholder="000.000.000-00">
+      <button type="submit" class="btn btn--primary" style="width:100%; margin-top:10px;">Entrar com documento</button>
+    </form>
+    <p class="muted small">Login simulado nesta versão — integração real via Firebase Auth + validação documental fica pronta para conectar em <code>js/firebase.js</code>.</p>
+  </div>
+</div>
+
+<!-- ── MODAL PRODUTO (Marketplace) ── -->
+<div class="modal" id="modalProduto" aria-hidden="true">
+  <div class="modal__panel">
+    <button class="modal__close" id="btnCloseProduto" aria-label="Fechar">✕</button>
+    <h2>Anunciar produto ou serviço</h2>
+    <form id="formProduto">
+      <label for="prodNome">Nome</label>
+      <input type="text" id="prodNome" required placeholder="Ex: Sementes de soja certificadas">
+      <label for="prodCategoria">Categoria</label>
+      <select id="prodCategoria">
+        <option>Insumos</option>
+        <option>Maquinário</option>
+        <option>Serviços técnicos</option>
+        <option>Transporte</option>
+        <option>Sementes e mudas</option>
+      </select>
+      <label for="prodPreco">Preço (R$)</label>
+      <input type="number" id="prodPreco" required min="0" step="0.01">
+      <label for="prodLocal">Localização (cidade/UF)</label>
+      <input type="text" id="prodLocal" required placeholder="Ex: Sorriso, MT">
+      <label for="prodDesc">Descrição</label>
+      <textarea id="prodDesc" rows="3" placeholder="Detalhes do produto ou serviço"></textarea>
+      <button type="submit" class="btn btn--primary" style="width:100%; margin-top:10px;">Publicar anúncio</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Chart.js (gráficos do histórico) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<!-- jsPDF (exportação PDF no navegador) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="js/config.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
